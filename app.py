@@ -1,48 +1,36 @@
 import streamlit as st
 import pandas as pd
-import pickle
 
-# Load model and features
-with open('rf_model.pkl', 'rb') as f:
-    model = pickle.load(f)
+# Feature columns you are using
+features = ['sensor_2', 'sensor_3', 'sensor_4', 'sensor_7', 'sensor_8',
+            'sensor_11', 'sensor_15', 'sensor_17', 'sensor_20', 'sensor_21']
 
-with open('features.pkl', 'rb') as f:
-    features = pickle.load(f)
+# Title
+st.title("🔧 Predictive Maintenance App - Upload Your Sensor Data")
 
-# App title
-st.title("🛠️ Predictive Maintenance - Oil & Gas Industry")
-st.write("Upload your sensor data CSV to predict machine failure.")
-
-# Upload CSV
-uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+# File uploader
+uploaded_file = st.file_uploader("📤 Upload your CSV file", type=["csv"])
 
 if uploaded_file is not None:
-    try:
-        input_df = pd.read_csv(uploaded_file)
+    df = pd.read_csv(uploaded_file)
 
-        # Show uploaded data
-        st.subheader("📊 Uploaded Sensor Data")
-        st.dataframe(input_df.head())
+    st.subheader("📋 Raw Data Preview")
+    st.dataframe(df)
 
-        # Check columns
-        if all(f in input_df.columns for f in features):
-            input_data = input_df[features]
+    # Check if required columns exist
+    required_columns = features + ['label']
+    missing = [col for col in required_columns if col not in df.columns]
 
-            # Predict button
-            if st.button("Predict"):
-                preds = model.predict(input_data)
+    if missing:
+        st.error(f"Missing columns in uploaded file: {missing}")
+    else:
+        X = df[features]
+        y = df['label']
 
-                # Show results
-                st.subheader("📢 Prediction Results")
-                results_df = pd.DataFrame({
-                    'Prediction': ['Failure' if p == 1 else 'Normal' for p in preds]
-                })
-                st.dataframe(results_df)
+        st.success("✅ Features and label successfully extracted!")
 
-                st.success("✅ Prediction complete!")
+        st.subheader("🧪 Input Features (X)")
+        st.dataframe(X)
 
-        else:
-            st.error("Uploaded file must contain these columns:\n" + ", ".join(features))
-
-    except Exception as e:
-        st.error(f"Error reading file: {e}")
+        st.subheader("🎯 Target (label)")
+        st.write(y.value_counts())
